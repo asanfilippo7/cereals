@@ -1,0 +1,333 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Cereal</title>
+
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300,300italic,400italic,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+    
+    <style>
+
+        body, button, div {
+            font-family: 'Roboto Condensed', sans-serif;
+        }
+
+        button {
+            border-radius: 0px;
+            box-shadow: none;
+            text-shadow: none;
+            border: none;
+            background-color: #bfbfbf;
+            padding: 5px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        #title {
+            position: absolute;
+            margin-top: 15px;
+            margin-left: 50px;
+        }
+
+        #subtitle {
+            position: absolute;
+            margin-top: 65px;
+            margin-left:50px;
+        }
+
+        .shelfTitle {
+            position: absolute;
+            margin-left: 1820px;
+        }
+
+        .shelfSubtitle {
+            opacity: 0.0;
+        }
+
+        .fade {
+            opacity: 0.0;
+        }
+
+        .selectors {
+            position: absolute;
+            top: 55px;
+            left:10px;
+        }
+
+        ul.selectors {
+            list-style-type: none;
+            position: relative;
+        }
+
+        ul.selectors li {
+            display: inline;
+            float: left;
+            margin-right: 10px;
+        }
+        
+    </style>
+        
+    <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script type="text/javascript">
+
+        var data;
+        
+        function getData() {
+            d3.csv("cereal.csv", function(d) {
+                d3.selectAll("svg > *").remove();
+                data = d;
+                draw();
+                //listStates(); /*Eventually will want something like this for nutrients*/
+            });
+        }
+        
+        var shelf1, shelf2, shelf3, xStart;     // declare some global variables
+        
+        function draw() {
+            var target = d3.select("#aisle");
+            
+            shelf1 = target.attr("height") - 40;
+            shelf2 = target.attr("height") - 290;
+            shelf3 = target.attr("height") - 540;
+            startX = 10;
+            
+            var shelfData = [
+                {Shelf: "Shelf One", Insights: "Home to private-label brands and classics that are often bought in bulk, the bottom shelf is the value-conscious shopper's domain. Expect to see crowd-pleasers that can feed the whole family."},
+                {Shelf: "Shelf Two", Insights: "Positioned directly at a kid's eye level, this shelf is home to childhood favorites. These boxes are almost certain to be sweet (if not highly nutritious)."},
+                {Shelf: "Shelf Three", Insights: "Known as the &quot;bulls-eye&quot; zone, the third shelf is directly in the customer's sight line. It is thus the most desirable (and most expensive) space, occupied by perennail top sellers."}
+            ];
+
+            var onShelf1 = 0;
+            var onShelf2 = 0;
+            var onShelf3 = 0;
+
+            var minCalories = d3.min(data, function(d) { return +d["Calories"]});
+            var maxCalories = d3.max(data, function(d) { return +d["Calories"]});
+            var colorScale = d3.scale.linear().domain([minCalories, maxCalories]).range(['beige', 'red']);
+
+            d3.selectAll(".fade").transition(1500).style("opacity",1.0);
+            d3.select('#title h1').html('Welcome to the cereal aisle.');
+            d3.select("#subtitle h3").html("Select a category below to explore.");
+
+            var shelf1Line = target.append("line")
+                .attr("class","1")
+                .attr("x1",startX)
+                .attr("x2",36*50)
+                .attr("y1",shelf1 + 22)
+                .attr("y2",shelf1 + 22)
+                .attr("stroke","black")
+                .attr("stroke-weight",2);
+
+            var shelf2Line = target.append("line")
+                .attr("class","2")
+                .attr("x1",startX)
+                .attr("x2",36*50)
+                .attr("y1",shelf2 + 22)
+                .attr("y2",shelf2 + 22)
+                .attr("stroke","black")
+                .attr("stroke-weight",2);
+
+            var shelf3Line = target.append("line")
+                .attr("class","3")
+                .attr("x1",startX)
+                .attr("x2",36*50)
+                .attr("y1",shelf3 + 22)
+                .attr("y2",shelf3 + 22)
+                .attr("stroke","black")
+                .attr("stroke-weight",2);
+                
+            var shelfTitles = d3.selectAll("div").filter(".shelfTitle")
+                .data(shelfData).enter().append("div")
+                .attr("class",function(d) {
+                    return "shelfTitle " + d["Shelf"];
+                })
+                .style("top",function(d) {
+                    if(d["Shelf"] === "Shelf One") {
+                        return (shelf1-10) + "px";
+                    }
+                    if(d["Shelf"] === "Shelf Two") {
+                        return (shelf2-10) + "px";
+                    }
+                    if(d["Shelf"] === "Shelf Three") {
+                        return (shelf3 -10) + "px";
+                    }
+                })
+                .each(function(d) {
+                    d3.select(this).append("h3")
+                        .html(d["Shelf"]);
+                    d3.select(this).append("p")
+                        .attr("class",function(d) {
+                            return "shelfSubtitle " + d["Shelf"];
+                        })
+                        .html(function(d) {
+                            return d["Insights"];
+                        });
+                });
+
+            d3.selectAll("div.shelfTitle")
+                .on("mouseover",function() {
+                    var selection = d3.selectAll(this.childNodes).filter("p")[0][[0]];
+                    d3.select(selection).transition(1000).style("opacity",1.0);
+                })
+                .on("mouseout",function() {
+                    var selection = d3.selectAll(this.childNodes).filter("p")[0][[0]];
+                    d3.select(selection).transition(1000).style("opacity",0.0);
+                })
+
+            target.selectAll("rect")
+                    .data(data)
+                .enter().append("rect")
+                    .attr("x",function(d) {
+                        if(+d["Display Shelf"] === 1) {
+                            onShelf1 ++;
+                            return startX + (790/15)*(onShelf1-1);
+                        }
+                        if(+d["Display Shelf"] === 2) {
+                            onShelf2 ++;
+                            return startX + (790/15)*(onShelf2-1);
+                        }
+                        if(+d["Display Shelf"] === 3) {
+                            onShelf3 ++;
+                            return startX + (790/15)*(onShelf3-1);
+                        }
+                    })
+                    .attr("y",function(d) {
+                        if(+d["Display Shelf"] === 1) {
+                            return shelf1;
+                        }
+                        if(+d["Display Shelf"] === 2) {
+                            return shelf2;
+                        }
+                        if(+d["Display Shelf"] === 3) {
+                            return shelf3;
+                        }
+                    })
+                    .attr("width",50)
+                    .attr("height",20)
+                    .style("fill", function(d) { return colorScale(+d["Calories"]); })
+                    .attr("class",function(d) {
+                        return "shelf" + d["Display Shelf"];
+                    })
+                    .append("title").text(function(d) {
+                        return d["Name"];
+                    });
+
+        }
+
+        function position(cat) {
+
+            d3.select("#title h1").html(cat);
+
+            var insights = ["Protein Insights","Fat Insights","Fiber Insights","Carb Insights","Sugar Insights"];
+            var subtitleTerm;
+
+            if(cat === "Protein") {
+                subtitleTerm = insights[0];
+            }
+            if(cat === "Fat") {
+                subtitleTerm = insights[1];
+            }
+            if(cat === "Fiber") {
+                subtitleTerm = insights[2];
+            }
+            if(cat === "Carbs") {
+                subtitleTerm = insights[3];
+            }
+            if(cat === "Sugars") {
+                subtitleTerm = insights[4];
+            }
+
+            d3.select("#subtitle h3").html(subtitleTerm);
+
+            catArray = [];
+            for (var i = 0; i < data.length; i++) {
+                d = data[i];
+                catArray.push(+d[cat]);
+            }
+            bins = [];
+            var startVal = Math.round(d3.min(catArray));
+            var endVal = Math.round(d3.max(catArray));
+            for (var j = startVal; j < endVal + 1; j++) {
+                bins.push(j);
+            }
+
+            var b = bins;
+
+            var inEachB1 = [];
+            for (var i = 0; i < b.length + 1; i++) {
+                inEachB1[i] = 0;
+            }
+            var inEachB2 = [];
+            for (var i = 0; i < b.length + 1; i++) {
+                inEachB2[i] = 0;
+            }
+            var inEachB3 = [];
+            for (var i = 0; i < b.length + 1; i++) {
+                inEachB3[i] = 0;
+            }
+                    
+            var boxes = d3.selectAll("rect").transition().duration(1000)
+                .attr("x",function(d) {
+                    var index = Math.round(+d[cat]);
+                    if(+d["Display Shelf"] === 1) {
+                        inEachB1[index] = inEachB1[index] + 1;
+                    }
+                    if(+d["Display Shelf"] === 2) {
+                        inEachB2[index] = inEachB2[index] + 1;
+                    }
+                    if(+d["Display Shelf"] === 3) {
+                        inEachB3[index] = inEachB3[index] + 1;
+                    }
+                    return startX + Math.round(+d[cat])*50;
+                })
+                .attr("y", function(d) {
+                    var index = Math.round(+d[cat]);
+                    if(+d["Display Shelf"] === 1) {
+                        inEachB1[index] = inEachB1[index] - 1;
+                        return shelf1 - ((inEachB1[index])*20);
+                    }
+                    if(+d["Display Shelf"] === 2) {
+                        inEachB2[index] = inEachB2[index] - 1;
+                        return shelf2 - ((inEachB2[index])*20);
+                    }
+                    if(+d["Display Shelf"] === 3) {
+                        inEachB3[index] = inEachB3[index] - 1;
+                        return shelf3 - ((inEachB3[index])*20);
+                    }
+                })
+                .select("title").text(function(d) {
+                    return d.Name + "\n " + cat + ": " + +d[cat] + " grams";
+                });
+        }
+        
+
+    </script>
+    
+</head>
+<body onLoad="getData()">
+
+    <div id="title" class="fade">
+        <h1></h1>
+    </div>
+
+    <div id="subtitle" class="fade">
+        <h3></h3>
+    </div>
+
+    <div class="selectors fade">
+        <ul class="selectors">
+            <li><button onClick="position('Protein')">Protein</button></li>
+            <li><button onClick="position('Fat')">Fat</button></li>
+            <li><button onClick="position('Fiber')">Fiber</button></li>
+            <li><button onClick="position('Carbs')">Carbs</button></li>
+            <li><button onClick="position('Sugars')">Sugars</button></li>
+            <li><button onClick="getData()">Reset</button></li>
+        </ul>
+    </div>
+
+    <svg id="aisle" width="2000" height="1020" style="margin-bottom:100px;"></svg>
+    
+    
+</body>
+</html>
